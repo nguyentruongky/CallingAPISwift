@@ -10,273 +10,126 @@ import Foundation
 import Alamofire
 
 struct ApiConnector {
-    static fileprivate var connector = AlamofireConnector()
+    static private var connector = AlamofireConnector()
     static private func getHeaders() -> [String: String]? {
         return [
             "Content-Type": "application/json",
-            "USER-KEY":  ""
+            "access_token":  "your access token or api key"
         ]
     }
-    private static func getUrl(from api: String) -> URL? {
-        let baseUrl = ""
-        let apiUrl = api.contains("http") ? api : baseUrl + api
+    static private func getUrl(from api: String) -> URL? {
+        let BASE_URL = ""
+        let apiUrl = api.contains("http") ? api : BASE_URL + api
         return URL(string: apiUrl)
     }
-
-    static private func request(_ api: String,
-                                method: HTTPMethod,
-                                params: [String: Any]? = nil,
-                                headers: [String: String]? = nil,
-                                success: @escaping (_ result: AnyObject) -> Void,
-                                fail: ((_ error: knError) -> Void)? = nil) {
+    
+    static func request(_ api: String,
+                        method: HTTPMethod,
+                        params: [String: Any]? = nil,
+                        headers: [String: String]? = nil,
+                        successJsonAction: ((_ result: AnyObject) -> Void)? = nil,
+                        successDataAction: ((Data) -> Void)? = nil,
+                        failAction: ((_ error: knError) -> Void)? = nil) {
         let finalHeaders = headers ?? getHeaders()
         let apiUrl = getUrl(from: api)
-        connector.request(withApi: apiUrl,
-                          method: method,
-                          params: params,
-                          header: finalHeaders,
-                          success: success,
-                          fail: fail)
-    }
-
-    static private func request(_ api: String,
-                                method: HTTPMethod,
-                                params: [String: Any]? = nil,
-                                headers: [String: String]? = nil,
-                                returnData: @escaping (Data) -> Void,
-                                fail: ((_ error: knError) -> Void)? = nil) {
-        let finalHeaders = headers ?? getHeaders()
-        let apiUrl = getUrl(from: api)
-        connector.request(withApi: apiUrl,
-                          method: method,
-                          params: params,
-                          header: finalHeaders,
-                          returnData: returnData,
-                          fail: fail)
-    }
-
-
-    static func get(_ api: String,
-                    params: [String: Any]? = nil,
-                    headers: [String: String]? = nil,
-                    success: @escaping (_ result: AnyObject) -> Void,
-                    fail: ((_ error: knError) -> Void)? = nil) {
-        request(api,
-                method: .get,
-                params: params,
-                headers: headers,
-                success: success,
-                fail: fail)
-    }
-
-    static func get(_ api: String,
-                    params: [String: Any]? = nil,
-                    headers: [String: String]? = nil,
-                    returnData: @escaping (Data) -> Void,
-                    fail: ((_ error: knError) -> Void)? = nil) {
-        request(api, method: .get,
-                params: params,
-                headers: headers,
-                returnData: returnData,
-                fail: fail)
-    }
-
-
-    static func put(_ api: String,
-                    params: [String: Any]? = nil,
-                    headers: [String: String]? = nil,
-                    success: @escaping (_ result: AnyObject) -> Void,
-                    fail: ((_ error: knError) -> Void)? = nil) {
-        request(api,
-                method: .put,
-                params: params,
-                headers: headers,
-                success: success,
-                fail: fail)
-    }
-
-    static func put(_ api: String,
-                    params: [String: Any]? = nil,
-                    headers: [String: String]? = nil,
-                    returnData: @escaping (Data) -> Void,
-                    fail: ((_ error: knError) -> Void)? = nil) {
-        request(api,
-                method: .put,
-                params: params,
-                headers: headers,
-                returnData: returnData,
-                fail: fail)
-    }
-
-
-    static func post(_ api: String,
-                     params: [String: Any]? = nil,
-                     headers: [String: String]? = nil,
-                     success: @escaping (_ result: AnyObject) -> Void,
-                     fail: ((_ error: knError) -> Void)? = nil) {
-        request(api,
-                method: .post,
-                params: params,
-                headers: headers,
-                success: success,
-                fail: fail)
-    }
-
-    static func post(_ api: String,
-                     params: [String: Any]? = nil,
-                     headers: [String: String]? = nil,
-                     returnData: @escaping (Data) -> Void,
-                     fail: ((_ error: knError) -> Void)? = nil) {
-        request(api,
-                method: .post,
-                params: params,
-                headers: headers,
-                returnData: returnData,
-                fail: fail)
-    }
-
-    static func delete(_ api: String,
-                       params: [String: Any]? = nil,
-                       headers: [String: String]? = nil,
-                       success: @escaping (_ result: AnyObject) -> Void,
-                       fail: ((_ error: knError) -> Void)? = nil) {
-        request(api, method: .delete, params: params, headers: headers, success: success, fail: fail)
-    }
-
-    static func delete(_ api: String,
-                       params: [String: Any]? = nil,
-                       headers: [String: String]? = nil,
-                       returnData: @escaping (Data) -> Void,
-                       fail: ((_ error: knError) -> Void)? = nil) {
-        request(api,
-                method: .delete,
-                params: params,
-                headers: headers,
-                returnData: returnData,
-                fail: fail)
+        connector.run(withApi: apiUrl,
+                      method: method,
+                      params: params,
+                      headers: finalHeaders,
+                      successJsonAction: successJsonAction,
+                      successDataAction: successDataAction,
+                      failAction: failAction)
     }
 }
 
-
 struct AlamofireConnector {
-    func request(withApi api: URL?,
-                 method: HTTPMethod,
-                 params: [String: Any]? = nil,
-                 header: [String: String]? = nil,
-                 success: @escaping (_ result: AnyObject) -> Void,
-                 fail: ((_ error: knError) -> Void)?) {
-
-        guard let api = api else { return }
-        let encoding: ParameterEncoding = method == .get ? URLEncoding.queryString : JSONEncoding.default
-        Alamofire.request(api, method: method,
-                          parameters: params, encoding: encoding,
-                          headers: header)
-            .responseJSON { (returnData) in
-                self.response(response: returnData,
-                              withSuccessAction: success,
-                              failAction: fail)
-        }
-    }
-
-    private func response(response: DataResponse<Any>,
-                          withSuccessAction success: @escaping (_ result: AnyObject) -> Void,
-                          failAction fail: ((_ error: knError) -> Void)?) {
-        let url = response.request?.url?.absoluteString ?? ""
-        print(url)
-
-        if let statusCode = response.response?.statusCode {
-            print(statusCode)
-            if statusCode == 500 {
-                return
-            }
-            // handle status code here: 401 -> show logout; 500 -> server error
-        }
-
-        if let error = response.result.error {
-            let err = knError(code: "unknown", message: error.localizedDescription)
-            fail?(err)
+    fileprivate func run(withApi api: URL?,
+                         method: HTTPMethod,
+                         params: [String: Any]? = nil,
+                         headers: [String: String]? = nil,
+                         successJsonAction: ((_ result: AnyObject) -> Void)? = nil,
+                         successDataAction: ((Data) -> Void)? = nil,
+                         failAction: ((_ error: knError) -> Void)?) {
+        guard let api = api else {
+            failAction?(InvalidAPIError(api: "nil"))
             return
         }
-
-        guard let result = response.result.value else {
-            // handle unknown error
-            return
-        }
-
-        // handle special error convention from server
-        // ...
-
-        success(result as AnyObject)
-    }
-
-
-    func request(withApi api: URL?,
-                 method: HTTPMethod,
-                 params: [String: Any]? = nil,
-                 header: [String: String]? = nil,
-                 returnData: @escaping (Data) -> Void,
-                 fail: ((_ error: knError) -> Void)?) {
-
-        guard let api = api else { return }
-        let encoding: ParameterEncoding = method == .get ? URLEncoding.queryString : JSONEncoding.default
+        let encoding: ParameterEncoding = method == .get ?
+            URLEncoding.queryString :
+            JSONEncoding.default
         Alamofire.request(api, method: method,
                           parameters: params,
                           encoding: encoding,
-                          headers: header)
-            .responseJSON { (rawData) in
-                self.response(response: rawData,
-                              withReturnData: returnData,
-                              failAction: fail)
+                          headers: headers)
+            .responseJSON { (returnData) in
+                self.answer(response: returnData,
+                            successJsonAction: successJsonAction,
+                            successDataAction: successDataAction,
+                            failAction: failAction)
         }
     }
-
-    private func response(response: DataResponse<Any>,
-                          withReturnData success: @escaping (Data) -> Void,
-                          failAction fail: ((_ error: knError) -> Void)?) {
-        let url = response.request?.url?.absoluteString ?? ""
-        print(url)
-
+    
+    private func answer(response: DataResponse<Any>,
+                        successJsonAction: ((_ result: AnyObject) -> Void)? = nil,
+                        successDataAction: ((Data) -> Void)? = nil,
+                        failAction fail: ((_ error: knError) -> Void)?) {
         if let statusCode = response.response?.statusCode {
-            print(statusCode)
             if statusCode == 500 {
                 return
             }
-            // handle status code here: 401 -> show logout; 500 -> server error
+            // handle status code here: 401 -> show logout; 500 -> show error
         }
-
+        
         if let error = response.result.error {
             let err = knError(code: "unknown", message: error.localizedDescription)
             fail?(err)
             return
         }
-
-        guard let result = response.data else {
+        
+        guard let json = response.result.value as AnyObject?, let data = response.data else {
             // handle unknown error
             return
         }
-
+        
         // handle special error convention from server
         // ...
-
-        success(result)
+        
+        if let successDataAction = successDataAction {
+            successDataAction(data)
+            return
+        }
+        successJsonAction?(json)
     }
-
-
 }
 
-struct knError {
+class knError {
     var code: String = "unknown"
     var message: String?
-    var data: AnyObject?
+    var rawData: AnyObject?
     var displayMessage: String {
         return message ?? code
     }
-
+    
     init() {}
-    init(code: String, message: String? = nil, data: AnyObject? = nil) {
+    init(code: String, message: String? = nil, rawData: AnyObject? = nil) {
         self.code = code
         self.message = message
-        self.data = data
+        self.rawData = rawData
     }
 }
 
+class InvalidAPIError: knError {
+    private override init() {
+        super.init()
+    }
+    
+    private override convenience init(code: String, message: String? = nil, rawData: AnyObject? = nil) {
+        self.init()
+    }
+    convenience init(api: String) {
+        self.init()
+        code = "404"
+        message = "Invalid API Endpoint"
+        rawData = api as AnyObject
+    }
+}
