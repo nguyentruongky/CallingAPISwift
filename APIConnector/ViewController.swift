@@ -12,7 +12,15 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        
+        let api = "https://api.cryptonator.com/api/ticker/btc-usd"
+        ApiConnector.get(api, success: { rawData in
+            print(rawData)
+        })
+        
+        ApiConnector.get(api, returnData: { data in
+            print(data)
+        })
     }
 
 
